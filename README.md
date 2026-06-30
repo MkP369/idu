@@ -8,7 +8,7 @@ A minimal multithreaded ***(fastest?)*** du -sh written in C++20
 
 ## Benchmarks
 
-*These are all tested on a 22 core x86 laptop*
+*These are all tested on my 22 core x86 laptop*
 
 ### Hot Cache
 
@@ -73,7 +73,7 @@ hyperfine --prepare 'sync; echo 3 | sudo tee /proc/sys/vm/drop_caches' \
 * Linux
 * GCC 11+ (Must support C++20)
 * CMake 3.20+
-* [mold](https://github.com/rui314/mold) linker (Optional)
+* [mold](https://github.com/rui314/mold) linker
 
 ### Release Profile
 
@@ -97,3 +97,14 @@ cmake --build build_debug -j$(nproc)
 - [ ] unit tests
 - [ ] add more display options
 - [ ] benchmark clang vs gcc?
+
+## Other Awesome Disk Usage Tools!
+
+[gdu](https://github.com/dundee/gdu) (Go)
+[ncdu](https://code.blicky.net/yorhel/ncdu) (Zig)
+[pdu](https://github.com/KSXGitHub/parallel-disk-usage) (Rust)
+[diskus](https://github.com/sharkdp/diskus) (Rust)
+[dust](https://github.com/bootandy/dust) (Rust)
+[dua](https://github.com/Byron/dua-cli) (Rust)
+
+
