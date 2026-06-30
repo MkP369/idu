@@ -26,7 +26,7 @@ public:
     const long fd = syscall(SYS_openat, AT_FDCWD, dir_path.c_str(),
                             O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
     if (fd < 0) [[unlikely]] { // skip
-      print_enoent_error();
+      print_enoent_error(dir_path.c_str());
       return 0;
     }
 
@@ -34,8 +34,8 @@ public:
     memcpy(ctx.path_buf.data(), dir_path.c_str(), dir_len);
     uint32_t parent_len = dir_len;
 
-    // Ensure the parent path ends with a trailing slash so we can append child
-    // names cleanly.
+    // ensure the parent path ends with a trailing slash so we can append child
+    // names cleanly
     if (ctx.path_buf[parent_len - 1] != '/') [[likely]] {
       ctx.path_buf[parent_len++] = '/';
     }
@@ -43,14 +43,14 @@ public:
     uint32_t total_files = 0;
     uint64_t local_blocks = 0;
 
-    // Main loop reading directory entries.
+    // main loop reading directory entries
     while (true) {
       const long nread = syscall(SYS_getdents64, fd, ctx.dents_buf.data(),
                                  WorkerContext::GETDENTS_BUF_SZ);
       if (nread == 0) [[likely]] {
         break; // finished all the entries
       } else if (nread < 0) [[unlikely]] {
-        print_enoent_error();
+        print_enoent_error(dir_path.c_str());
         break;
       }
       for (long pos = 0; pos < nread;) {
@@ -73,7 +73,7 @@ public:
         if (entry->d_type == 4) {
           const size_t nlen = strlen(entry->d_name);
           memcpy(ctx.path_buf.data() + parent_len, entry->d_name,
-                 nlen + 1); // Build the absolute path.
+                 nlen + 1); // build the absolute path
           ctx.emplace_back(ctx.path_buf.data(), parent_len + nlen);
           pushed_dirs++;
         } else { // if file, symlink, device node, etc., we stat it
@@ -86,7 +86,7 @@ public:
             local_blocks += stx.stx_blocks;
           }
         }
-        pos = next_pos; // Move to the next dirent entry.
+        pos = next_pos; // move to the next dirent entry
         total_files++;
       }
     }
@@ -97,8 +97,8 @@ public:
   }
 
 private:
-  static void print_enoent_error() {
+  static void print_enoent_error(const char *s) {
     std::error_code ec(errno, std::system_category());
-    std::cout << "Error: " << ec.message() << '\n';
+    std::cout << "Error: " << ec.message() << " " << s << '\n';
   }
 };
