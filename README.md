@@ -1,5 +1,7 @@
 # idu (instant du)
 
+![License](https://img.shields.io/badge/license-MIT-red.svg?style=flat-square)
+
 A minimal multithreaded ***(fastest?)*** du -sh written in C++20
 
 ## Benchmarks
