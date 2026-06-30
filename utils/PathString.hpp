@@ -5,10 +5,9 @@
 #include <memory>
 #include <utility>
 
-// a custom string class designed to reduce heap allocations.
-// GCC has only a capacity of 15 in its sso, LLVM has 22
+// a custom lightweight string class designed to reduce heap allocations
+// std::string has an sso of size of 15
 // but paths easily grow bigger than that so this class uses a bigger capacity
-// to reduce expensive heap allocations
 
 class PathString {
 public:
