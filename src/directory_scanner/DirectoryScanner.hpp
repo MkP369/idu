@@ -76,8 +76,8 @@ public:
                  nlen + 1); // build the absolute path
           ctx.emplace_back(ctx.path_buf.data(), parent_len + nlen);
           pushed_dirs++;
-        } else { // if file, symlink, device node, etc., we stat it
-                 // immediately
+        } else {
+          // if file, symlink, device node, etc. we stat it immediately
           struct statx stx;
           if (syscall(SYS_statx, fd, entry->d_name,
                       AT_STATX_DONT_SYNC | AT_SYMLINK_NOFOLLOW |

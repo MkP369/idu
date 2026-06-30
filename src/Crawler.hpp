@@ -53,7 +53,7 @@ private:
   const uint32_t m_num_threads = (std::thread::hardware_concurrency() == 0)
                                      ? 8
                                      : std::thread::hardware_concurrency();
-  std::string m_start_path;
+  const std::string m_start_path;
   std::vector<WorkerContext> m_workers;
   alignas(std::hardware_destructive_interference_size)
       std::atomic<uint32_t> m_active_workers = 0;
@@ -76,12 +76,12 @@ private:
     const uint32_t seed_target =
         m_num_threads * 8; // 8 threads * 8 = 64 initial dirs
 
-    // Reuse workers_[0] as the seed-phase context
+    // reuse workers_[0] as the seed-phase context
     auto &seed_ctx = m_workers[0];
     seed_ctx.emplace_back(m_start_path.data(), m_start_path.length());
 
     uint32_t head = 0;
-    // keep processing until we hit the seed_target OR run out of directories.
+    // keep processing until we hit the seed_target or run out of directories.
     while (head < seed_ctx.local_dir_queue.size() &&
            seed_ctx.local_dir_queue.size() < seed_target) {
       const auto dir = std::move(seed_ctx.local_dir_queue[head++]);
@@ -89,7 +89,7 @@ private:
       DirectoryScanner::process_dir(dir, seed_ctx, pushed_dirs);
     }
 
-    // Once the BFS is done, distribute the work evenly
+    // once the BFS is done, distribute the work evenly
     size_t write_index_0 = 0;
     auto i = head;
     while (i < seed_ctx.local_dir_queue.size()) {
@@ -129,10 +129,10 @@ private:
   bool get_next_work(uint32_t id, PathString &out_dir) {
     auto &ctx = m_workers[id];
     while (true) {
-      // take snapshot of work counter .
+      // take snapshot of work counter
       // this prevents missed wakeups if work arrives or the crawl completes
-      // while we are inspecting the queues.
-      uint32_t snap = m_work_counter.load(std::memory_order_acquire);
+      // while we are inspecting the queues
+      const uint32_t snap = m_work_counter.load(std::memory_order_acquire);
 
       // first, try to take from our own queue
       bool found = ctx.try_take(out_dir);
@@ -150,7 +150,7 @@ private:
         }
         // decrement the global awake worker count.
         // If we are the last awake worker (1->0), the entire crawl is
-        // finished.
+        // finished
         if (m_active_workers.fetch_sub(1, std::memory_order_seq_cst) == 1) {
           m_done.store(true, std::memory_order_release);
           m_work_counter.fetch_add(1, std::memory_order_release);
@@ -172,10 +172,10 @@ private:
             m_active_workers.fetch_add(1, std::memory_order_acq_rel);
             continue; // try to get work again
           } else [[unlikely]] {
-            return false; // crawl is done
+            return false; // crawling done
           }
         } else [[unlikely]] {
-          return false; // crawl is done.
+          return false; // crawling done
         }
       }
 
@@ -183,14 +183,14 @@ private:
     }
   }
 
-  void worker_func(uint32_t id) {
+  void worker_func(const uint32_t id) {
     auto &ctx = m_workers[id];
 
-    // Loop until crawling is done
+    // loop until crawling is done
     PathString dir_path;
     while (!m_done.load(std::memory_order_relaxed)) {
       if (!get_next_work(id, dir_path)) [[unlikely]] {
-        break; // Traversal complete
+        break; // crawling done
       }
 
       uint32_t pushed_dirs = 0;
@@ -202,8 +202,8 @@ private:
         // check active_workers else a thread could sleep forever
         m_work_counter.fetch_add(1, std::memory_order_seq_cst);
 
-        uint32_t awake = m_active_workers.load(std::memory_order_seq_cst);
-        uint32_t sleeping = m_num_threads - awake;
+        const uint32_t awake = m_active_workers.load(std::memory_order_seq_cst);
+        const uint32_t sleeping = m_num_threads - awake;
 
         if (sleeping > 0) {
           uint32_t to_wake = std::min(pushed_dirs, sleeping);
