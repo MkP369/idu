@@ -98,13 +98,15 @@ cmake --build build_debug -j$(nproc)
 - [ ] add more display options
 - [ ] benchmark clang vs gcc?
 
+---
+
 ## Other Awesome Disk Usage Tools!
 
-[gdu](https://github.com/dundee/gdu) (Go)
-[ncdu](https://code.blicky.net/yorhel/ncdu) (Zig)
-[pdu](https://github.com/KSXGitHub/parallel-disk-usage) (Rust)
-[diskus](https://github.com/sharkdp/diskus) (Rust)
-[dust](https://github.com/bootandy/dust) (Rust)
-[dua](https://github.com/Byron/dua-cli) (Rust)
+- [gdu](https://github.com/dundee/gdu) (Go)
+- [ncdu](https://code.blicky.net/yorhel/ncdu) (Zig)
+- [pdu](https://github.com/KSXGitHub/parallel-disk-usage) (Rust)
+- [diskus](https://github.com/sharkdp/diskus) (Rust)
+- [dust](https://github.com/bootandy/dust) (Rust)
+- [dua](https://github.com/Byron/dua-cli) (Rust)
 
 
