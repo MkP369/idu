@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../utils/PathString.hpp"
-#include "../HardlinkManager/HardlinkManager.hpp"
-#include "../WorkerContext.hpp"
+#include "WorkerContext.hpp"
+#include "hardlink_manager/HardlinkManager.hpp"
+#include "utils/PathString.hpp"
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>

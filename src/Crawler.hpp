@@ -1,7 +1,9 @@
-#include "../utils/PathString.hpp"
-#include "HardlinkManager/HardlinkManager.hpp"
+#pragma once
+
 #include "WorkerContext.hpp"
 #include "directory_scanner/DirectoryScanner.hpp"
+#include "hardlink_manager/HardlinkManager.hpp"
+#include "utils/PathString.hpp"
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
@@ -11,6 +13,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+
 class Crawler {
 public:
   Crawler(std::string start_path)

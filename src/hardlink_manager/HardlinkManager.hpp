@@ -1,16 +1,15 @@
 #pragma once
 
-#include "../../utils/SpinLock.hpp"
-#include "../../utils/third_party/emhash/config.hpp"
-#include "../../utils/third_party/emhash/emhash_table6.hpp"
+#include "emhash/emhash_table6.hpp"
+#include "utils/SpinLock.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <emhash/config.hpp>
 #include <new>
 
 // uses
 // https://github.com/ktprime/emhash/blob/master/include/emhash/hash_table6.hpp
 // for unordered_set
-
 struct HardlinkKey {
   uint64_t dev;
   uint64_t ino;

@@ -1,6 +1,7 @@
 #pragma once
-#include "../utils/PathString.hpp"
-#include "../utils/SpinLock.hpp"
+
+#include "utils/PathString.hpp"
+#include "utils/SpinLock.hpp"
 #include <array>
 #include <cstdint>
 #include <new>

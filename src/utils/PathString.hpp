@@ -1,4 +1,5 @@
 #pragma once
+
 #include <array>
 #include <cstdint>
 #include <cstring>
@@ -8,7 +9,6 @@
 // a custom lightweight string class designed to reduce heap allocations
 // std::string has an sso of size of 15
 // but paths easily grow bigger than that so this class uses a bigger capacity
-
 class PathString {
 public:
   PathString() noexcept { m_buf[0] = '\0'; }

@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.20)
 
 project(idu)
@@ -10,8 +9,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(idu
     src/main.cpp
 )
+
 target_include_directories(idu PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_include_directories(idu SYSTEM PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )
 
 target_compile_options(idu PRIVATE
