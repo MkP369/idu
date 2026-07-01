@@ -12,7 +12,7 @@ namespace fs = std::filesystem;
 
 // 1 block = 512 bytes
 void print_size(const uint64_t total_blocks) noexcept {
-  double size_in_kb = (total_blocks + 1) / 2.0; // to KB
+  double size_in_kb = (total_blocks) / 2.0; // to KB
   std::cout << std::fixed << std::setprecision(1);
   if (size_in_kb < 1024) {
     std::cout << size_in_kb << " KB";
@@ -47,8 +47,7 @@ int main(int argc, char *argv[]) {
 
   if (S_ISDIR(base_stat.stx_mode)) {
     Crawler cw(start_path);
-    uint64_t dir_blocks = cw.run();
-    uint64_t total_blocks = dir_blocks + base_stat.stx_blocks;
+    uint64_t total_blocks = cw.run();
     print_size(total_blocks);
   } else {
     print_size(base_stat.stx_blocks);

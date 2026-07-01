@@ -1,7 +1,7 @@
 #pragma once
 #include "../utils/PathString.hpp"
+#include "../utils/SpinLock.hpp"
 #include <array>
-#include <atomic>
 #include <cstdint>
 #include <new>
 #include <utility>
@@ -20,7 +20,7 @@ public:
   static constexpr uint32_t GETDENTS_BUF_SZ =
       256 * 1024; // 256 kb to fit in L2 Cache
 
-  std::atomic_flag spinlock = ATOMIC_FLAG_INIT;
+  SpinLock sl;
   std::vector<PathString> local_dir_queue;
 
   // aligned because another thread can invalidate
@@ -37,53 +37,32 @@ public:
   std::array<char, 4096>
       path_buf; // for storing current file paths to be put into queue
 
-  WorkerContext() {
-    // preallocate to prevent resizing
-    local_dir_queue.reserve(1024);
-  }
+  WorkerContext() { local_dir_queue.reserve(1024); }
 
   [[gnu::always_inline]]
   bool try_take(PathString &out) {
-    lock();
+    sl.lock();
     if (!local_dir_queue.empty()) {
       out = std::move(local_dir_queue.back());
       local_dir_queue.pop_back();
-      unlock();
+      sl.unlock();
       return true;
     }
-    unlock();
+    sl.unlock();
     return false;
   }
 
   [[gnu::always_inline]]
   void push_back(PathString &dir) {
-    lock();
+    sl.lock();
     local_dir_queue.push_back(std::move(dir));
-    unlock();
+    sl.unlock();
   }
 
   [[gnu::always_inline]]
   void emplace_back(const char *path, uint32_t len) {
-    lock();
+    sl.lock();
     local_dir_queue.emplace_back(path, len);
-    unlock();
-  }
-
-private:
-  [[gnu::always_inline]]
-  void lock() noexcept {
-    while (spinlock.test_and_set(std::memory_order_acquire)) [[likely]] {
-      // If the lock is held by someone else, we must yield the CPU to prevent
-      // burning cycles.
-#if defined(__x86_64__) || defined(__i386__)
-      __builtin_ia32_pause();
-#elif defined(__aarch64__)
-      asm volatile("yield" ::: "memory");
-#endif
-    }
-  }
-  [[gnu::always_inline]]
-  void unlock() noexcept {
-    spinlock.clear(std::memory_order_release);
+    sl.unlock();
   }
 };

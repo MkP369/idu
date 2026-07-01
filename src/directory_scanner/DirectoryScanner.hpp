@@ -2,6 +2,7 @@
 
 #include "../../utils/PathString.hpp"
 #include "../WorkerContext.hpp"
+#include "/home/mkp/dev/cpp-projects/idu/src/HardlinkManager/HardlinkManager.hpp"
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
@@ -14,14 +15,15 @@
 #include <unistd.h>
 
 // scans a single dir
+// currently does not handle mounts
 class DirectoryScanner {
 
 public:
   // returns total files processed, pushes new dirs into ctx and
   // updates pushed_dirs
   static uint32_t process_dir(const PathString &dir_path, WorkerContext &ctx,
-                              uint32_t &pushed_dirs) {
-    pushed_dirs = 0;
+                              uint32_t &pushed_dirs,
+                              HardLinkManager *hardlink_tracker) {
 
     const long fd = syscall(SYS_openat, AT_FDCWD, dir_path.c_str(),
                             O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
@@ -30,6 +32,16 @@ public:
       return 0;
     }
 
+    uint64_t local_blocks = 0;
+
+    // stat the dir (dir cannot be hardlinked)
+    struct statx dir_stx;
+    if (syscall(SYS_statx, fd, "",
+                AT_STATX_DONT_SYNC | AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
+                    AT_EMPTY_PATH,
+                STATX_BLOCKS, &dir_stx) == 0) [[likely]] {
+      local_blocks += dir_stx.stx_blocks;
+    }
     const uint32_t dir_len = dir_path.length();
     memcpy(ctx.path_buf.data(), dir_path.c_str(), dir_len);
     uint32_t parent_len = dir_len;
@@ -41,7 +53,7 @@ public:
     }
 
     uint32_t total_files = 0;
-    uint64_t local_blocks = 0;
+    pushed_dirs = 0;
 
     // main loop reading directory entries
     while (true) {
@@ -77,13 +89,22 @@ public:
           ctx.emplace_back(ctx.path_buf.data(), parent_len + nlen);
           pushed_dirs++;
         } else {
-          // if file, symlink, device node, etc. we stat it immediately
+          // stat immediately (maybe batch in future)
           struct statx stx;
           if (syscall(SYS_statx, fd, entry->d_name,
                       AT_STATX_DONT_SYNC | AT_SYMLINK_NOFOLLOW |
                           AT_NO_AUTOMOUNT,
-                      STATX_BLOCKS, &stx) == 0) [[likely]] {
-            local_blocks += stx.stx_blocks;
+                      STATX_BLOCKS | STATX_INO | STATX_NLINK, &stx) == 0)
+              [[likely]] {
+            if (stx.stx_nlink > 1) [[unlikely]] { // contains hardlinks
+              if (hardlink_tracker->insert(stx.stx_dev_major, stx.stx_dev_minor,
+                                           stx.stx_ino)) {
+                local_blocks += stx.stx_blocks;
+              }
+            } else [[likely]] {
+
+              local_blocks += stx.stx_blocks;
+            }
           }
         }
         pos = next_pos; // move to the next dirent entry

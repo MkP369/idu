@@ -1,4 +1,5 @@
 #include "../utils/PathString.hpp"
+#include "HardlinkManager/HardlinkManager.hpp"
 #include "WorkerContext.hpp"
 #include "directory_scanner/DirectoryScanner.hpp"
 #include <algorithm>
@@ -61,6 +62,7 @@ private:
       std::atomic<bool> m_done = false;
   alignas(std::hardware_destructive_interference_size)
       std::atomic<uint32_t> m_work_counter = 0;
+  HardLinkManager m_hardlink_tracker;
 
   // seeding is done to prevent threads from going waking and sleeping abruptly
   // at the beginning by giving them some accumulated work to keep the alive
@@ -86,7 +88,8 @@ private:
            seed_ctx.local_dir_queue.size() < seed_target) {
       const auto dir = std::move(seed_ctx.local_dir_queue[head++]);
       uint32_t pushed_dirs = 0;
-      DirectoryScanner::process_dir(dir, seed_ctx, pushed_dirs);
+      DirectoryScanner::process_dir(dir, seed_ctx, pushed_dirs,
+                                    &m_hardlink_tracker);
     }
 
     // once the BFS is done, distribute the work evenly
@@ -194,7 +197,8 @@ private:
       }
 
       uint32_t pushed_dirs = 0;
-      DirectoryScanner::process_dir(dir_path, ctx, pushed_dirs);
+      DirectoryScanner::process_dir(dir_path, ctx, pushed_dirs,
+                                    &m_hardlink_tracker);
 
       // wake up sleeping theads
       if (pushed_dirs > 0) [[likely]] {
