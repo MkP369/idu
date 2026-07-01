@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../../utils/SpinLock.hpp"
+#include "../../utils/third_party/emhash/config.hpp"
 #include "../../utils/third_party/emhash/emhash_table6.hpp"
-#include "/home/mkp/dev/cpp-projects/idu/utils/third_party/emhash/config.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <new>
