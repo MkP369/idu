@@ -38,8 +38,6 @@ target_compile_options(idu PRIVATE
         -funroll-loops
         -fno-semantic-interposition 
         -ftracer 
-        -fno-exceptions
-        -fno-rtti
         -ffast-math
         -fmerge-all-constants
         -ffunction-sections -fdata-sections
