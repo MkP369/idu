@@ -18,7 +18,8 @@ public:
       memcpy(m_buf.data(), s, n);
       m_buf[n] = '\0';
     } else {
-      m_heap_ptr = std::make_unique<char[]>(n + 1);
+      m_heap_ptr = std::make_unique_for_overwrite<char[]>(n + 1);
+
       memcpy(m_heap_ptr.get(), s, n);
       m_heap_ptr[n] = '\0';
     }
