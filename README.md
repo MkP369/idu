@@ -55,7 +55,7 @@ hyperfine --prepare 'sync; echo 3 | sudo tee /proc/sys/vm/drop_caches' \
 ```bash
 idu [OPTION...] [PATHS...]
 
-  -i, --ignore-errors    Don't display file-system errors
+  -i, --ignore-errors    Do not display file-system errors
   -f, --format <FORMAT>  Set the display format [possible values: metric,
                          binary, bytes, kb, kib, mb, mib, gb, gib, tb, tib]
                          (default: binary)
@@ -80,7 +80,7 @@ idu
 
 ### Get du of multiple dirs/files with their file and dir counts
 ```bash
-idu index.html Wallpapers/ Documents/ -c
+idu index.html dev/ Documents/ -c
 ```
 ### Example output
 ```bash
