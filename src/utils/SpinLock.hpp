@@ -4,16 +4,20 @@
 
 class SpinLock {
 public:
+  // TTAS lock
   [[gnu::always_inline]]
   void lock() noexcept {
-    while (m_spinlock.test_and_set(std::memory_order_acquire)) [[likely]] {
-      // If the lock is held by someone else, we must yield the CPU to prevent
-      // burning cycles.
+    while (true) {
+      if (!m_spinlock.test_and_set(std::memory_order_acquire)) [[likely]] {
+        return;
+      }
+      while (m_spinlock.test(std::memory_order_relaxed)) [[likely]] {
 #if defined(__x86_64__) || defined(__i386__)
-      __builtin_ia32_pause();
+        __builtin_ia32_pause();
 #elif defined(__aarch64__)
-      asm volatile("yield" ::: "memory");
+        asm volatile("yield" ::: "memory");
 #endif
+      }
     }
   }
 
