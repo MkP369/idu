@@ -1,6 +1,7 @@
 #pragma once
 
 #include "WorkerContext.hpp"
+#include "arg_parser/ArgParser.hpp"
 #include "hardlink_manager/HardlinkManager.hpp"
 #include "utils/PathString.hpp"
 #include <cerrno>
@@ -17,19 +18,21 @@
 // scans a single dir
 // currently does not handle mounts
 class DirectoryScanner {
-
 public:
-  // returns total files processed, pushes new dirs into ctx and
+  // pushes new dirs into ctx and
   // updates pushed_dirs
-  static uint32_t process_dir(const PathString &dir_path, WorkerContext &ctx,
-                              uint32_t &pushed_dirs,
-                              HardLinkManager *hardlink_tracker) {
+  // calculates total blocks, files and subdirs
+  static void process_dir(const PathString &dir_path, WorkerContext &ctx,
+                          uint32_t &pushed_dirs,
+                          HardLinkManager *hardlink_tracker, Args *config) {
 
     const long fd = syscall(SYS_openat, AT_FDCWD, dir_path.c_str(),
                             O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
     if (fd < 0) [[unlikely]] { // skip
-      print_enoent_error(dir_path.c_str());
-      return 0;
+      if (!config->ignore_errors) [[unlikely]] {
+        print_enoent_error(dir_path.c_str());
+      }
+      return;
     }
 
     uint64_t local_blocks = 0;
@@ -52,7 +55,7 @@ public:
       ctx.path_buf[parent_len++] = '/';
     }
 
-    uint32_t total_files = 0;
+    uint64_t local_files = 0;
     pushed_dirs = 0;
 
     // main loop reading directory entries
@@ -62,7 +65,9 @@ public:
       if (nread == 0) [[likely]] {
         break; // finished all the entries
       } else if (nread < 0) [[unlikely]] {
-        print_enoent_error(dir_path.c_str());
+        if (!config->ignore_errors) [[unlikely]] {
+          print_enoent_error(dir_path.c_str());
+        }
         break;
       }
       for (long pos = 0; pos < nread;) {
@@ -106,15 +111,16 @@ public:
               local_blocks += stx.stx_blocks;
             }
           }
+          local_files++;
         }
         pos = next_pos; // move to the next dirent entry
-        total_files++;
       }
     }
 
     syscall(SYS_close, fd);
     ctx.total_blocks += local_blocks;
-    return total_files;
+    ctx.total_sub_dirs += pushed_dirs;
+    ctx.total_files += local_files;
   }
 
 private:

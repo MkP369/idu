@@ -29,6 +29,8 @@ public:
   // (accessing both spinlock and local_dir_queue)
   alignas(std::hardware_destructive_interference_size) uint64_t total_blocks =
       0;
+  uint64_t total_files = 0;
+  uint64_t total_sub_dirs = 0;
   // aligned to the page size to make reads fast
   alignas(4096) std::array<uint8_t, GETDENTS_BUF_SZ> dents_buf;
 

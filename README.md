@@ -53,18 +53,52 @@ hyperfine --prepare 'sync; echo 3 | sudo tee /proc/sys/vm/drop_caches' \
 ## Usage
 
 ```bash
-# Scan a specific directory
-./idu /path/to/scan
+idu [OPTION...] [PATHS...]
 
-# Scan the current directory
-./idu
+  -i, --ignore-errors    Don't display file-system errors
+  -f, --format <FORMAT>  Set the display format [possible values: metric,
+                         binary, bytes, kb, kib, mb, mib, gb, gib, tb, tib]
+                         (default: binary)
+  -j, --threads <NUM>    Set the number of threads (0 means total logical
+                         processors) (default: 0)
+  -c, --count-items      Display total count of files and sub-directories
+      --paths <PATHS>    The path(s) to query
+  -h, --help             Print usage
 ```
 
-**Example Output:**
+## Examples
+
+### Get du of the current dir
 ```bash
-67.9 GB
+idu
+```
+### Example output
+```bash
+"/home/mkp/"
+62.07 GiB
 ```
 
+### Get du of multiple dirs/files with their file and dir counts
+```bash
+idu index.html Wallpapers/ Documents/ -c
+```
+### Example output
+```bash
+"/home/mkp/index.html"
+4.00 KiB
+Total sub-directories: 0
+Total files: 1
+
+"/home/mkp/dev/"
+5.94 GiB
+Total sub-directories: 7223
+Total files: 106597
+
+"/home/mkp/Documents/"
+3.00 MiB
+Total sub-directories: 0
+Total files: 3
+```
 ---
 
 ## Building 
@@ -95,7 +129,7 @@ cmake --build build_debug -j$(nproc)
 
 - [ ] batch statx call
 - [ ] unit tests
-- [ ] add more display options
+- [x] add more display options
 - [ ] benchmark clang vs gcc?
 
 ---

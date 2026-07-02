@@ -1,10 +1,12 @@
 #pragma once
 
 #include "WorkerContext.hpp"
+#include "arg_parser/ArgParser.hpp"
 #include "directory_scanner/DirectoryScanner.hpp"
 #include "hardlink_manager/HardlinkManager.hpp"
 #include "utils/PathString.hpp"
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -16,10 +18,18 @@
 
 class Crawler {
 public:
-  Crawler(std::string start_path)
-      : m_start_path(std::move(start_path)), m_workers(m_num_threads) {}
+  Crawler(std::string start_path, Args *config)
+      : m_start_path(std::move(start_path)),
+        m_workers(config->num_threads == 0 ? m_num_threads
+                                           : config->num_threads),
+        m_config(config) {
+    if (config->num_threads != 0) [[unlikely]] {
+      m_num_threads = config->num_threads;
+    }
+  }
 
-  uint64_t run() {
+  // returns {total_blocks, total_sub_dirs, total_files}
+  std::array<uint64_t, 3> run() {
     seed_bfs();
 
     // to check if already completed in the seeding phase only
@@ -31,41 +41,47 @@ public:
       }
     }
     if (!initally_active) [[unlikely]] {
-      return m_workers[0].total_blocks;
+      return {m_workers[0].total_blocks, m_workers[0].total_sub_dirs,
+              m_workers[0].total_files};
     }
 
     // we keep all the threads awake at the starting to prevent futex calls
     // because high chance that some work will come
     m_active_workers.store(m_num_threads, std::memory_order_relaxed);
 
-    // Spin up the threads.
+    // spin up the threads
     std::vector<std::thread> threads(m_num_threads);
     for (uint32_t i = 0; i < m_num_threads; i++) {
       threads[i] = std::thread(&Crawler::worker_func, this, i);
     }
 
     // calc the total
-    uint64_t total = 0;
+    uint64_t total_blocks = 0;
+    uint64_t total_files = 0;
+    uint64_t total_sub_dirs = 0;
     for (uint32_t i = 0; i < m_num_threads; ++i) {
       threads[i].join();
-      total += m_workers[i].total_blocks;
+      total_blocks += m_workers[i].total_blocks;
+      total_files += m_workers[i].total_files;
+      total_sub_dirs += m_workers[i].total_sub_dirs;
     }
-    return total;
+    return {total_blocks, total_sub_dirs, total_files};
   }
 
 private:
-  const uint32_t m_num_threads = (std::thread::hardware_concurrency() == 0)
-                                     ? 8
-                                     : std::thread::hardware_concurrency();
+  uint16_t m_num_threads = (std::thread::hardware_concurrency() == 0)
+                               ? 8
+                               : std::thread::hardware_concurrency();
   const std::string m_start_path;
   std::vector<WorkerContext> m_workers;
+  HardLinkManager m_hardlink_tracker;
+  Args *m_config;
   alignas(std::hardware_destructive_interference_size)
       std::atomic<uint32_t> m_active_workers = 0;
   alignas(std::hardware_destructive_interference_size)
       std::atomic<bool> m_done = false;
   alignas(std::hardware_destructive_interference_size)
       std::atomic<uint32_t> m_work_counter = 0;
-  HardLinkManager m_hardlink_tracker;
 
   // seeding is done to prevent threads from going waking and sleeping abruptly
   // at the beginning by giving them some accumulated work to keep the alive
@@ -92,7 +108,7 @@ private:
       const auto dir = std::move(seed_ctx.local_dir_queue[head++]);
       uint32_t pushed_dirs = 0;
       DirectoryScanner::process_dir(dir, seed_ctx, pushed_dirs,
-                                    &m_hardlink_tracker);
+                                    &m_hardlink_tracker, m_config);
     }
 
     // once the BFS is done, distribute the work evenly
@@ -116,7 +132,7 @@ private:
     seed_ctx.local_dir_queue.resize(write_index_0);
   }
 
-  bool try_steal(uint32_t worker_ind, PathString &out) {
+  bool try_steal(const uint32_t worker_ind, PathString &out) {
 
     uint32_t c = m_num_threads - 1;
     uint32_t index = worker_ind + 1; // to prevent thudering herd
@@ -132,7 +148,7 @@ private:
     return false;
   }
 
-  bool get_next_work(uint32_t id, PathString &out_dir) {
+  bool get_next_work(const uint32_t id, PathString &out_dir) {
     auto &ctx = m_workers[id];
     while (true) {
       // take snapshot of work counter
@@ -201,7 +217,7 @@ private:
 
       uint32_t pushed_dirs = 0;
       DirectoryScanner::process_dir(dir_path, ctx, pushed_dirs,
-                                    &m_hardlink_tracker);
+                                    &m_hardlink_tracker, m_config);
 
       // wake up sleeping theads
       if (pushed_dirs > 0) [[likely]] {
