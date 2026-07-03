@@ -101,22 +101,27 @@ Total files: 3
 ```
 ---
 
-## Building 
+## Installing & Building
 
-### Build Requirements
+### Prerequisites
 * Linux
-* GCC 11+ (Must support C++20)
+* GCC 12+
 * CMake 3.20+
 * [mold](https://github.com/rui314/mold) linker
 
-### Release Profile
+### Installing
+```bash
+curl -fsSL https://raw.githubusercontent.com/MkP369/idu/main/install.sh | bash
+```
+
+### Building Release Profile
 
 ```bash
 cmake -B build_release -DCMAKE_BUILD_TYPE=Release
 cmake --build build_release -j$(nproc)
 ```
 
-### Debug Profile
+### Building Debug Profile
 
 ```bash
 cmake -B build_debug -DCMAKE_BUILD_TYPE=Debug
